@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BizTrack — Web Inventory & Sales System</title>
+  <meta name="description" content="BizTrack: Simple web-based inventory and sales management demo using localStorage" />
+
+  <style>
+    
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --muted:#9aa6b2;
+      --accent:#4f46e5; 
+      --accent-2:#06b6d4; 
+      --success:#10b981;
+      --danger:#ef4444;
+      --glass: rgba(255,255,255,0.03);
+      --radius:12px;
+      --glass-2: rgba(255,255,255,0.02);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      color-scheme: dark;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: linear-gradient(180deg,#071026 0%, #061423 60%);
+      color:#e6eef6;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding:28px;
+    }
+
+    .app{
+      max-width:1200px;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns:260px 1fr;
+      gap:20px;
+      align-items:start;
+    }
+
+    /* SIDEBAR */
+    .sidebar{
+      background:linear-gradient(180deg,var(--card), rgba(11,18,32,0.8));
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:0 6px 30px rgba(2,6,23,0.6);
+      height:calc(100vh - 56px);
+      position:sticky;
+      top:28px;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+
+    .brand{
+      display:flex;gap:10px;align-items:center;
+    }
+    .logo{
+      width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent), var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:18px;
+    }
+    .brand h1{font-size:16px;margin:0}
+    .brand p{margin:0;color:var(--muted);font-size:12px}
+
+    nav{display:flex;flex-direction:column;gap:8px}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;color:var(--muted);cursor:pointer}
+    .nav-item.active{background:linear-gradient(90deg, rgba(79,70,229,0.12), rgba(6,182,212,0.06));color:var(--accent)}
+    .nav-item:hover{background:var(--glass)}
+
+    /* Main panel */
+    .panel{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:var(--radius);
+      padding:20px;
+      min-height:calc(100vh - 56px);
+      box-shadow:0 6px 30px rgba(2,6,23,0.5);
+    }
+
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+    .search{display:flex;gap:8px;align-items:center}
+    .search input{padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;outline:none}
+    .btn{display:inline-block;padding:8px 12px;border-radius:10px;background:var(--accent);color:white;text-decoration:none;border:none;cursor:pointer}
+    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+    .card{background:var(--glass-2);padding:14px;border-radius:10px}
+    .card h3{margin:0;font-size:13px;color:var(--muted)}
+    .card p{margin:6px 0 0 0;font-size:22px;font-weight:700}
+
+    /* Tables and forms */
+    .table{width:100%;border-collapse:collapse;margin-top:12px}
+    .table th,.table td{padding:10px;border-bottom:1px solid rgba(255,255,255,0.03);text-align:left;font-size:13px}
+    .table th{color:var(--muted);font-weight:600}
+
+    .form-row{display:flex;gap:8px;margin-bottom:8px}
+    .form-row .col{flex:1}
+    input,select{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+
+    .actions{display:flex;gap:8px}
+    .small{padding:6px 8px;font-size:13px;border-radius:8px}
+    .danger{background:var(--danger);color:white;border:none}
+    .success{background:var(--success);color:white;border:none}
+
+    /* Responsive */
+    @media (max-width:980px){
+      .app{grid-template-columns:1fr;}
+      .sidebar{height:auto;position:relative;top:0}
+      .grid{grid-template-columns:repeat(2,1fr)}
+    }
+    @media (max-width:640px){
+      .grid{grid-template-columns:1fr}
+    }
+
+    footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" role="navigation">
+      <div class="brand">
+        <div class="logo">BT</div>
+        <div>
+          <h1>BizTrack</h1>
+          <p>Inventory & Sales</p>
+        </div>
+      </div>
+
+      <nav>
+        <div class="nav-item active" data-view="dashboard">Dashboard</div>
+        <div class="nav-item" data-view="inventory">Inventory</div>
+        <div class="nav-item" data-view="sales">Sales</div>
+        <div class="nav-item" data-view="reports">Reports</div>
+        <div class="nav-item" data-view="settings">Settings</div>
+      </nav>
+
+      <div style="margin-top:auto;font-size:13px;color:var(--muted)">
+        Logged in as <strong>Michaella</strong>
+      </div>
+    </aside>
+
+    <main class="panel">
+      <div class="topbar">
+        <div class="search">
+          <input id="globalSearch" placeholder="Search products or sales..." />
+          <button class="btn secondary" id="importDummy">Load demo</button>
+        </div>
+        <div>
+          <button class="btn" id="openAddProduct">+ Add Product</button>
+        </div>
+      </div>
+
+      <!-- Sections -->
+      <section id="view-dashboard" class="view">
+        <div class="grid">
+          <div class="card">
+            <h3>Total Products</h3>
+            <p id="stat-products">0</p>
+          </div>
+          <div class="card">
+            <h3>On Hand Quantity</h3>
+            <p id="stat-quantity">0</p>
+          </div>
+          <div class="card">
+            <h3>Total Sales (₱)</h3>
+            <p id="stat-sales">0.00</p>
+          </div>
+        </div>
+
+        <h2 style="margin-top:6px">Recent Sales</h2>
+        <table class="table" id="recentSales">
+          <thead><tr><th>Date</th><th>Product</th><th>Qty</th><th>Total</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <section id="view-inventory" class="view" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+          <h2>Inventory</h2>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="filterCat"><option value="all">All categories</option></select>
+            <button class="btn secondary" id="exportCsv">Export CSV</button>
+          </div>
+        </div>
+
+        <table class="table" id="inventoryTable">
+          <thead><tr><th>SKU</th><th>Name</th><th>Category</th><th>Price (₱)</th><th>Stock</th><th>Actions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <section id="view-sales" class="view" style="display:none">
+        <h2>Sales</h2>
+        <div class="card" style="margin-bottom:12px">
+          <div class="form-row">
+            <div class="col"><select id="sellProduct"></select></div>
+            <div style="width:120px"><input id="sellQty" type="number" min="1" value="1" /></div>
+            <div><button class="btn" id="makeSale">Make Sale</button></div>
+          </div>
+        </div>
+
+        <h3>Sales History</h3>
+        <table class="table" id="salesTable">
+          <thead><tr><th>Date</th><th>SKU</th><th>Product</th><th>Qty</th><th>Amount (₱)</th><th>Actions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <section id="view-reports" class="view" style="display:none">
+        <h2>Reports</h2>
+        <div class="grid" style="margin-top:12px">
+          <div class="card">
+            <h3>Top selling product</h3>
+            <p id="top-product">—</p>
+          </div>
+          <div class="card">
+            <h3>Low stock items</h3>
+            <p id="low-stock">—</p>
+          </div>
+          <div class="card">
+            <h3>Revenue (this session)</h3>
+            <p id="rev-session">0.00</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-settings" class="view" style="display:none">
+        <h2>Settings</h2>
+        <div class="card">
+          <p style="color:var(--muted)">This demo stores data in your browser's localStorage. Clear data to reset.</p>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn secondary" id="clearData">Clear Data</button>
+            <button class="btn" id="downloadBackup">Download Backup</button>
+          </div>
+        </div>
+      </section>
+
+      <footer>BizTrack • lightweight demo • no server required</footer>
+    </main>
+  </div>
+
+  <!-- Add / Edit product modal (simple) -->
+  <div id="modal" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:60">
+    <div style="background:rgba(2,6,23,0.6);position:absolute;inset:0"></div>
+    <div style="background:linear-gradient(180deg,#061423,#071026);border-radius:12px;padding:18px;min-width:320px;max-width:640px;position:relative;z-index:70;box-shadow:0 10px 50px rgba(2,6,23,0.7)">
+      <h3 id="modalTitle">Add Product</h3>
+      <div style="margin-top:8px">
+        <div class="form-row">
+          <div class="col"><input id="p_sku" placeholder="SKU (unique)" /></div>
+          <div class="col"><input id="p_name" placeholder="Product name" /></div>
+        </div>
+        <div class="form-row">
+          <div class="col"><input id="p_price" type="number" placeholder="Price" /></div>
+          <div class="col"><input id="p_stock" type="number" placeholder="Stock" /></div>
+        </div>
+        <div class="form-row">
+          <div class="col"><input id="p_category" placeholder="Category" /></div>
+          <div class="col"><input id="p_desc" placeholder="Short description (optional)" /></div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+          <button class="btn secondary" id="closeModal">Cancel</button>
+          <button class="btn" id="saveProduct">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // -----------------------------
+    // BizTrack — lightweight demo logic
+    // Stores data in localStorage under key "biztrack_data"
+    // -----------------------------
+
+    const KEY = 'biztrack_data_v1';
+
+    // initial in-memory store
+    let store = {products:[], sales:[]};
+
+    // util: save & load
+    function load(){
+      try{
+        const raw = localStorage.getItem(KEY);
+        if(raw){ store = JSON.parse(raw); }
+      }catch(e){ console.error('load',e) }
+    }
+    function save(){ localStorage.setItem(KEY, JSON.stringify(store)); renderAll(); }
+
+    // seed demo data
+    function loadDemo(){
+      store = {
+        products:[
+          {sku:'P1001', name:'Eco Notebook', category:'Stationery', price:120, stock:48, desc:'A5 recycled paper notebook'},
+          {sku:'P1002', name:'Solar Lamp', category:'Electronics', price:850, stock:15, desc:'Portable rechargeable lamp'},
+          {sku:'P1003', name:'Ceramic Mug', category:'Kitchen', price:199, stock:30, desc:'12oz mug'},
+          {sku:'P1004', name:'Blue Pen', category:'Stationery', price:15, stock:150, desc:'Ballpoint pen'}
+        ],
+        sales:[
+          {id:1,sku:'P1002',name:'Solar Lamp',qty:1,amount:850,date: new Date().toISOString()},
+          {id:2,sku:'P1001',name:'Eco Notebook',qty:2,amount:240,date: new Date().toISOString()}
+        ]
+      };
+      save();
+    }
+
+    // render
+    function renderAll(){
+      renderStats();
+      renderInventoryTable();
+      renderProductOptions();
+      renderSalesTable();
+      renderRecentSales();
+      renderReports();
+      populateCategoryFilter();
+    }
+
+    function renderStats(){
+      const prods = store.products.length;
+      const qty = store.products.reduce((s,p)=>s + Number(p.stock || 0),0);
+      const salesTotal = store.sales.reduce((s,x)=>s + Number(x.amount || 0),0);
+      document.getElementById('stat-products').textContent = prods;
+      document.getElementById('stat-quantity').textContent = qty;
+      document.getElementById('stat-sales').textContent = salesTotal.toFixed(2);
+    }
+
+    function renderInventoryTable(){
+      const tbody = document.querySelector('#inventoryTable tbody'); tbody.innerHTML = '';
+      const q = document.getElementById('globalSearch').value.trim().toLowerCase();
+      const cat = document.getElementById('filterCat').value;
+      store.products.filter(p=>{
+        if(cat !== 'all' && p.category !== cat) return false;
+        if(!q) return true;
+        return p.sku.toLowerCase().includes(q) || p.name.toLowerCase().includes(q) || (p.category||'').toLowerCase().includes(q);
+      }).forEach(p=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${p.sku}</td><td>${p.name}</td><td>${p.category||''}</td><td>${Number(p.price).toFixed(2)}</td><td>${p.stock}</td><td class="actions">
+          <button class="small" data-sku="${p.sku}" onclick="openEdit(event)">Edit</button>
+          <button class="small danger" data-sku="${p.sku}" onclick="removeProduct(event)">Delete</button>
+        </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderProductOptions(){
+      const sel = document.getElementById('sellProduct'); sel.innerHTML = '';
+      store.products.forEach(p=>{
+        const opt = document.createElement('option'); opt.value = p.sku; opt.textContent = `${p.name} — ${p.sku} (₱${Number(p.price).toFixed(2)})`;
+        sel.appendChild(opt);
+      });
+    }
+
+    function renderSalesTable(){
+      const tbody = document.querySelector('#salesTable tbody'); tbody.innerHTML = '';
+      store.sales.slice().reverse().forEach(s=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${new Date(s.date).toLocaleString()}</td><td>${s.sku}</td><td>${s.name}</td><td>${s.qty}</td><td>${Number(s.amount).toFixed(2)}</td><td><button class="small" onclick="refundSale(${s.id})">Refund</button></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderRecentSales(){
+      const tbody = document.querySelector('#recentSales tbody'); tbody.innerHTML = '';
+      store.sales.slice(-5).reverse().forEach(s=>{
+        const tr = document.createElement('tr'); tr.innerHTML = `<td>${new Date(s.date).toLocaleString()}</td><td>${s.name}</td><td>${s.qty}</td><td>₱${Number(s.amount).toFixed(2)}</td>`; tbody.appendChild(tr);
+      });
+    }
+
+    function renderReports(){
+      // top product by qty
+      const totals = {};
+      store.sales.forEach(s => { totals[s.sku] = (totals[s.sku] || 0) + s.qty; });
+      const best = Object.entries(totals).sort((a,b)=>b[1]-a[1])[0];
+      document.getElementById('top-product').textContent = best ? `${best[0]} — ${best[1]} sold` : '—';
+
+      const low = store.products.filter(p=>p.stock <= 5).map(p=>`${p.name}(${p.stock})`).join(', ') || 'None';
+      document.getElementById('low-stock').textContent = low;
+
+      const rev = store.sales.reduce((s,x)=>s + Number(x.amount),0);
+      document.getElementById('rev-session').textContent = rev.toFixed(2);
+    }
+
+    function populateCategoryFilter(){
+      const sel = document.getElementById('filterCat'); const existing = new Set(store.products.map(p=>p.category).filter(Boolean));
+      sel.innerHTML = '<option value="all">All categories</option>' + Array.from(existing).map(c=>`<option value="${c}">${c}</option>`).join('');
+    }
+
+    // actions
+    document.getElementById('openAddProduct').addEventListener('click', ()=>openModal());
+    document.getElementById('closeModal').addEventListener('click', ()=>closeModal());
+    document.getElementById('saveProduct').addEventListener('click', saveProduct);
+    document.getElementById('importDummy').addEventListener('click', ()=>{ if(confirm('Load demo data? This overwrites current data.')) loadDemo(); });
+    document.getElementById('globalSearch').addEventListener('input', ()=>renderInventoryTable());
+    document.getElementById('filterCat').addEventListener('change', ()=>renderInventoryTable());
+    document.getElementById('makeSale').addEventListener('click', makeSale);
+    document.getElementById('clearData').addEventListener('click', ()=>{ if(confirm('Clear all BizTrack data?')){ store={products:[],sales:[]}; save(); } });
+    document.getElementById('downloadBackup').addEventListener('click', downloadBackup);
+    document.getElementById('exportCsv').addEventListener('click', exportCSV);
+
+    // nav
+    document.querySelectorAll('.nav-item').forEach(el=>el.addEventListener('click', ()=>{
+      document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+      el.classList.add('active');
+      const view = el.dataset.view;
+      document.querySelectorAll('.view').forEach(v=>v.style.display='none');
+      document.getElementById('view-'+view).style.display = 'block';
+    }));
+
+    // modal helpers
+    let editSku = null;
+    function openModal(product){
+      editSku = null;
+      document.getElementById('modalTitle').textContent = product ? 'Edit Product' : 'Add Product';
+      document.getElementById('p_sku').value = product ? product.sku : '';
+      document.getElementById('p_name').value = product ? product.name : '';
+      document.getElementById('p_price').value = product ? product.price : '';
+      document.getElementById('p_stock').value = product ? product.stock : '';
+      document.getElementById('p_category').value = product ? product.category : '';
+      document.getElementById('p_desc').value = product ? product.desc : '';
+      if(product) editSku = product.sku;
+      document.getElementById('p_sku').disabled = !!product;
+      document.getElementById('modal').style.display = 'flex';
+    }
+    function closeModal(){ document.getElementById('modal').style.display = 'none'; }
+
+    function saveProduct(){
+      const sku = document.getElementById('p_sku').value.trim();
+      const name = document.getElementById('p_name').value.trim();
+      const price = Number(document.getElementById('p_price').value || 0);
+      const stock = Number(document.getElementById('p_stock').value || 0);
+      const category = document.getElementById('p_category').value.trim();
+      const desc = document.getElementById('p_desc').value.trim();
+      if(!sku || !name){ alert('SKU and name are required'); return; }
+      if(editSku){
+        const p = store.products.find(x=>x.sku === editSku);
+        Object.assign(p,{name,price,stock,category,desc});
+      } else {
+        if(store.products.find(x=>x.sku === sku)){ alert('SKU must be unique'); return; }
+        store.products.push({sku,name,price,stock,category,desc});
+      }
+      save(); closeModal();
+    }
+
+    window.openEdit = function(e){
+      const sku = e.currentTarget.dataset.sku;
+      const p = store.products.find(x=>x.sku===sku); if(p) openModal(p);
+    }
+
+    window.removeProduct = function(e){
+      const sku = e.currentTarget.dataset.sku;
+      if(!confirm('Delete '+sku+'?')) return;
+      store.products = store.products.filter(x=>x.sku !== sku);
+      // also remove sales referencing it
+      store.sales = store.sales.filter(s=>s.sku !== sku);
+      save();
+    }
+
+    function makeSale(){
+      const sku = document.getElementById('sellProduct').value;
+      const qty = Number(document.getElementById('sellQty').value || 1);
+      if(!sku){ alert('No product selected'); return; }
+      const p = store.products.find(x=>x.sku===sku);
+      if(!p) return alert('Product not found');
+      if(p.stock < qty) return alert('Insufficient stock');
+      p.stock -= qty;
+      const amount = qty * Number(p.price);
+      const id = Date.now();
+      store.sales.push({id,sku,name:p.name,qty,amount,date:new Date().toISOString()});
+      save();
+      alert('Sale recorded — ₱' + amount.toFixed(2));
+    }
+
+    function refundSale(id){
+      if(!confirm('Refund sale #'+id+'? This will return stock.')) return;
+      const idx = store.sales.findIndex(s=>s.id===id);
+      if(idx === -1) return;
+      const s = store.sales[idx];
+      // return stock
+      const p = store.products.find(x=>x.sku===s.sku);
+      if(p) p.stock = Number(p.stock) + Number(s.qty);
+      store.sales.splice(idx,1);
+      save();
+    }
+
+    // backup / export
+    function downloadBackup(){
+      const blob = new Blob([JSON.stringify(store, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'biztrack-backup.json'; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportCSV(){
+      const header = ['SKU','Name','Category','Price','Stock'];
+      const rows = [header.join(',')].concat(store.products.map(p => [p.sku,`"${p.name.replace(/"/g,'""')}"`,p.category||'',Number(p.price).toFixed(2),p.stock].join(',')));
+      const blob = new Blob([rows.join('\n')],{type:'text/csv'});
+      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='inventory.csv'; a.click(); URL.revokeObjectURL(url);
+    }
+
+    // small helpers
+    function uid(){ return Math.floor(Math.random()*1000000); }
+
+    // search shortcut
+    document.getElementById('globalSearch').addEventListener('keydown', e=>{ if(e.key === 'Enter') renderInventoryTable(); });
+
+    // init
+    load(); renderAll();
+  </script>
+</body>
+</html>
